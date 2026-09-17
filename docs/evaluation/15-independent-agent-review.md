@@ -52,9 +52,8 @@ The repository now addresses both sides:
 - the loader accepts `utf-8-sig` defensively;
 - a regression test covers a BOM-prefixed manifest.
 
-The initial review conclusion remains
-`independent_agent_review_needs_changes` until the external reviewer confirms the
-fix from a fresh checkout.
+The initial review conclusion was `independent_agent_review_needs_changes`. The
+focused follow-up below confirmed the remediation from a fresh checkout.
 
 ## Declared limitations
 
@@ -68,10 +67,25 @@ The reviewer identified two important interpretation boundaries:
 
 These are disclosed design boundaries rather than hidden production-equivalence claims.
 
-## Follow-up gate
+## Focused remediation review
 
-A fresh external checkout should rerun the corpus fetch and initialization under
-Windows PowerShell 5.1 and confirm that no BOM workaround is required. If the original
-reviewer confirms that result and finds no regression, the project may record
-`independent_agent_review_complete`. The separate human-review status must remain
-pending until a human reviewer performs and signs the four-factor assessment.
+The same external agent performed a read-only follow-up from a clean
+`C:\S_RAG_TEST` clone of `main` at commit `fd06527`. It reported:
+
+- `uv sync --locked --python 3.11 --group dev` completed successfully with 132
+  packages installed;
+- the corpus fetch completed under Windows PowerShell 5.1 without modification;
+- the first four manifest bytes were `[123, 13, 10, 32]`, and no UTF-8 BOM was
+  present;
+- `uv run srag handoff init-gitlab --reset` verified four pinned files and initialized
+  all four tasks without a manual workaround;
+- `uv run pytest -q` passed all 37 tests, including the BOM regression test.
+
+The reported remediation result resolves the original setup defect without changing
+the benchmark's evidence boundary. The project records
+`independent_agent_review_complete`.
+
+The separate human-review status remains pending until a human reviewer performs and
+signs the four-factor assessment. This review is not production validation or GitLab
+approval, and the project claim remains
+`source_derived_mechanism_evidence_only`.

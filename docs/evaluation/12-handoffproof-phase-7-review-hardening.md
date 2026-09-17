@@ -81,15 +81,14 @@ cover model-free preflight blocking, source tamper rejection, evidence-gated too
 review packet persistence, and refusal of partial approvals.
 
 The desktop and 390 x 844 responsive browser flows were checked with zero console
-errors or warnings after a clean reload. Evidence is stored at
-`output/playwright/handoffproof-phase-7-review-hardening.png` and
-`output/playwright/handoffproof-phase-7-review-hardening-mobile.png`.
+errors or warnings after a clean reload. The retained public screenshot is stored at
+`output/playwright/handoffproof-phase-7-review-hardening.png`.
 
 The current claim remains `source_derived_mechanism_evidence_only`. Source integrity
 is verified and the causal mechanisms execute locally, but the task interpretations
-and answer keys are not independently reviewed, and no GitLab production system was
-used. A private organizational pilot would still be required to claim real handover
-readiness.
+and answer keys have not been independently reviewed by a human, and no GitLab
+production system was used. A private organizational pilot would still be required to
+claim real handover readiness.
 
 ## External agent review update
 
@@ -98,7 +97,11 @@ review protocol. It reported all four task designs passing source alignment,
 start-state realism, reference-action completeness and verifier validity, while
 retaining the source-derived claim boundary. It also found a Windows PowerShell 5.1
 UTF-8 BOM incompatibility in corpus initialization. The writer, loader and regression
-coverage have been corrected; external confirmation of the fix remains pending.
+coverage were corrected. In a focused follow-up from a clean checkout at commit
+`fd06527`, the same reviewer reported that Windows PowerShell 5.1 produced a BOM-free
+manifest, initialization succeeded without a workaround, and all 37 tests passed.
+The independent-agent evidence is therefore recorded as
+`independent_agent_review_complete`.
 
 This is independent agent evidence, not independent human review. Details and the
 remediation boundary are recorded in

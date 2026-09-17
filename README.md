@@ -227,9 +227,14 @@ while correctly retaining the project claim
 `source_derived_mechanism_evidence_only`.
 
 That review also found a Windows PowerShell 5.1 UTF-8 BOM incompatibility in the corpus
-fetch path. The writer, loader and regression coverage have been corrected. The review
-remains `independent_agent_review_needs_changes` until the external reviewer confirms
-the fix from a fresh checkout.
+fetch path. The writer, loader and regression coverage were corrected. In a focused
+follow-up from a fresh clone at commit `fd06527`, the same external agent confirmed
+that Windows PowerShell 5.1 wrote a BOM-free manifest, initialization required no
+workaround, and all 37 tests passed. The resulting evidence label is
+`independent_agent_review_complete`.
+
+This completes the independent **agent** review only. It does not change the benchmark
+to `human_reviewed`, and it does not imply production validation or GitLab approval.
 
 Read the [review record](docs/evaluation/15-independent-agent-review.md) and the
 [repeatable review protocol](docs/evaluation/14-independent-review-protocol.md).
