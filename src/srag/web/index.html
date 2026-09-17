@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:,">
+  <title>HandoffProof local workbench</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">H/P</span>
+      <span class="brand-copy">HandoffProof local workbench</span>
+      <nav class="view-switcher" aria-label="Workbench view">
+        <button id="handoffTab" class="view-tab is-active" type="button">HandoffProof</button>
+        <button id="ragTab" class="view-tab" type="button">RAG baseline</button>
+      </nav>
+    </div>
+    <div class="system-state" aria-live="polite">
+      <span id="ollamaState" class="state-label">Checking runtime</span>
+      <span id="modelState" class="model-label"></span>
+    </div>
+  </header>
+
+  <main id="ragView" class="workspace app-view" hidden>
+    <aside class="library panel">
+      <div class="panel-heading">
+        <div><p class="kicker">Knowledge base</p><h1>Documents</h1></div>
+        <span id="documentCount" class="count">0</span>
+      </div>
+      <label id="dropzone" class="dropzone" for="fileInput">
+        <input id="fileInput" type="file" multiple hidden>
+        <span class="drop-title">Drop files here</span>
+        <span id="dropHint" class="drop-hint">or choose documents</span>
+      </label>
+      <button id="ingestButton" class="button button-primary" type="button" disabled>Index selected files</button>
+      <div id="uploadMessage" class="inline-message" hidden></div>
+      <div class="library-title-row">
+        <h2>Indexed locally</h2>
+        <button id="refreshButton" class="text-button" type="button">Refresh</button>
+      </div>
+      <div id="documents" class="document-list" aria-live="polite">
+        <div class="skeleton document-skeleton"></div><div class="skeleton document-skeleton"></div>
+      </div>
+    </aside>
+
+    <section class="conversation panel">
+      <div class="conversation-heading">
+        <div><p class="kicker">Grounded answer</p><h2>Ask the indexed material</h2></div>
+        <label class="top-k-control"><span>Sources</span>
+          <select id="topK" aria-label="Number of retrieved sources">
+            <option value="3">3</option><option value="4" selected>4</option><option value="5">5</option><option value="6">6</option>
+          </select>
+        </label>
+      </div>
+      <div id="answerArea" class="answer-area">
+        <div id="emptyAnswer" class="empty-state">
+          <span class="empty-index">LOCAL</span>
+          <h3>Your documents stay on this machine.</h3>
+          <p>Index one or more files, then ask a specific question. The answer will include traceable evidence and runtime measurements.</p>
+        </div>
+      </div>
+      <form id="questionForm" class="composer">
+        <label for="question">Question</label>
+        <div class="composer-row">
+          <textarea id="question" rows="2" placeholder="What does the document say about..." required></textarea>
+          <button id="askButton" class="button button-primary ask-button" type="submit">Ask</button>
+        </div>
+        <p class="helper">Enter to ask. Shift + Enter adds a new line.</p>
+      </form>
+    </section>
+
+    <aside class="telemetry panel">
+      <div class="panel-heading">
+        <div><p class="kicker">Live trace</p><h2>Performance</h2></div>
+        <span id="traceState" class="trace-state">Idle</span>
+      </div>
+      <section class="metric-primary"><span class="metric-label">End-to-end latency</span><strong id="endToEnd">--</strong></section>
+      <div class="metric-pair">
+        <section><span class="metric-label">Generation rate</span><strong id="tokenRate">--</strong></section>
+        <section><span class="metric-label">First token</span><strong id="firstToken">--</strong></section>
+      </div>
+      <div id="metricGroups" class="metric-groups">
+        <div class="metric-group"><h3>Retrieval</h3><dl>
+          <div><dt>Total</dt><dd id="retrievalTime">--</dd></div>
+          <div><dt>Embedding</dt><dd id="embeddingTime">--</dd></div>
+          <div><dt>Similarity</dt><dd id="similarityTime">--</dd></div>
+          <div><dt>Chunks used</dt><dd id="chunksUsed">--</dd></div>
+        </dl></div>
+        <div class="metric-group"><h3>Generation</h3><dl>
+          <div><dt>Wall time</dt><dd id="generationTime">--</dd></div>
+          <div><dt>Prompt tokens</dt><dd id="promptTokens">--</dd></div>
+          <div><dt>Output tokens</dt><dd id="outputTokens">--</dd></div>
+          <div><dt>Context size</dt><dd id="contextSize">--</dd></div>
+        </dl></div>
+        <div id="typesafeMetricGroup" class="metric-group" hidden><h3>Evidence gate</h3><dl>
+          <div><dt>Judged candidates</dt><dd id="typesafeCandidates">--</dd></div>
+          <div><dt>Approved</dt><dd id="typesafeIncluded">--</dd></div>
+          <div><dt>Review</dt><dd id="typesafeReview">--</dd></div>
+          <div><dt>Excluded</dt><dd id="typesafeExcluded">--</dd></div>
+          <div><dt>Gate time</dt><dd id="typesafeTime">--</dd></div>
+        </dl></div>
+        <details class="metric-details"><summary>Model details</summary><dl>
+          <div><dt>Ollama total</dt><dd id="ollamaTotal">--</dd></div>
+          <div><dt>Model load</dt><dd id="modelLoad">--</dd></div>
+          <div><dt>Prompt eval</dt><dd id="promptEval">--</dd></div>
+          <div><dt>Generation eval</dt><dd id="generationEval">--</dd></div>
+          <div><dt>Embedding model load</dt><dd id="embeddingModelLoad">--</dd></div>
+          <div><dt>Embedding eval</dt><dd id="embeddingEval">--</dd></div>
+          <div><dt>Embedding input tokens</dt><dd id="embeddingInputTokens">--</dd></div>
+          <div><dt>Embedding dimensions</dt><dd id="embeddingDimensions">--</dd></div>
+        </dl></details>
+      </div>
+      <section id="ingestMetrics" class="ingest-metrics" hidden><h3>Latest ingestion</h3><dl id="ingestMetricList"></dl></section>
+    </aside>
+  </main>
+
+  <main id="handoffView" class="handoff-workspace app-view">
+    <aside class="handoff-sidebar panel">
+      <div class="panel-heading">
+        <div><p class="kicker">Mechanism validation</p><h1>Handover case</h1></div>
+        <span id="handoffCaseCount" class="count">0</span>
+      </div>
+      <p class="handoff-intro">Compare the synthetic mechanism control with a hash-verified, source-derived GitLab runbooks benchmark.</p>
+      <button id="initializeGitlab" class="button button-primary" type="button">Create GitLab benchmark</button>
+      <button id="initializeHandoff" class="button button-secondary" type="button">Create synthetic control</button>
+      <div id="handoffMessage" class="inline-message" hidden></div>
+      <div class="library-title-row"><h2>Persisted locally</h2><button id="refreshHandoff" class="text-button" type="button">Refresh</button></div>
+      <div id="handoffCases" class="document-list" aria-live="polite"><div class="skeleton document-skeleton"></div></div>
+    </aside>
+
+    <section class="handoff-main panel">
+      <div class="conversation-heading">
+        <div><p id="handoffKicker" class="kicker">Phase 1–6</p><h2 id="handoffTitle">Controlled handover experiment</h2></div>
+        <span id="handoffPhase" class="phase-badge">Fixture only</span>
+      </div>
+      <div id="handoffEmpty" class="handoff-empty">
+        <span class="empty-index">NO AGENT CLAIMS</span>
+        <h3>First prove the experiment itself.</h3>
+        <p>The four tasks seed a supported control, missing documentation, missed retrieval and an unavailable agent tool. The rehearsal confirms that each deterministic result pattern is classified correctly.</p>
+      </div>
+      <div id="handoffCaseDetail" hidden>
+        <div class="case-summary">
+          <div><span>Role</span><strong id="handoffRole">—</strong></div>
+          <div><span>Current corpus</span><strong id="handoffCorpus">—</strong></div>
+          <div><span>Tasks</span><strong id="handoffTaskCount">—</strong></div>
+          <div><span>Benchmark</span><strong id="handoffBenchmarkStatus">—</strong></div>
+        </div>
+        <div id="benchmarkProvenance" class="benchmark-provenance" hidden></div>
+        <div class="handoff-actions">
+          <div><p class="kicker">Representative tasks</p><h3>Seeded failure controls</h3></div>
+          <div class="handoff-action-buttons">
+            <button id="rehearseHandoff" class="button button-secondary" type="button">Run fixture rehearsal</button>
+            <label class="agent-task-control"><span>Live task</span><select id="agentTaskSelect" aria-label="Task for live successor agent"></select></label>
+            <button id="runHandoffAgent" class="button button-primary" type="button" disabled>Run live agent</button>
+          </div>
+        </div>
+        <div id="handoffTasks" class="handoff-task-list"></div>
+        <section id="benchmarkReportPanel" class="benchmark-report-panel" hidden>
+          <div class="result-heading"><div><p class="kicker">Phase 7</p><h3>Hardened source benchmark report</h3></div><span id="benchmarkReportState" class="phase-badge">Awaiting live runs</span></div>
+          <p class="result-limitation">Aggregates the latest live experiment for every task. Source integrity and causal accuracy are reported separately from human review.</p>
+          <button id="createBenchmarkReport" class="button button-secondary" type="button">Build latest report</button>
+          <div id="benchmarkReportOutcome" class="repair-proof" hidden></div>
+        </section>
+        <section id="reviewPanel" class="benchmark-report-panel" hidden>
+          <div class="result-heading"><div><p class="kicker">Phase 7</p><h3>Independent benchmark review</h3></div><span id="reviewState" class="phase-badge">Not started</span></div>
+          <p class="result-limitation">A named reviewer must validate every task against its pinned source, simulated start state, reference actions and verifier. The application never self-approves these checks.</p>
+          <button id="createReviewPacket" class="button button-secondary" type="button">Create review packet</button>
+          <div id="reviewWorkspace" class="repair-card" hidden>
+            <label for="reviewTask">Task to review<select id="reviewTask"></select></label>
+            <div class="review-checklist">
+              <label><input id="reviewSource" type="checkbox"> Task aligns with the pinned source</label>
+              <label><input id="reviewStateCheck" type="checkbox"> Simulated start state is realistic</label>
+              <label><input id="reviewActions" type="checkbox"> Reference actions are complete</label>
+              <label><input id="reviewVerifier" type="checkbox"> Verifier criteria are valid</label>
+            </div>
+            <div class="repair-fields">
+              <label for="reviewerName">Reviewer<input id="reviewerName" placeholder="Independent reviewer"></label>
+              <label for="reviewDecision">Decision<select id="reviewDecision"><option value="approved">Approve</option><option value="changes_requested">Request changes</option></select></label>
+            </div>
+            <label for="reviewNotes">Review notes<textarea id="reviewNotes" rows="3" placeholder="Evidence checked and any concerns..."></textarea></label>
+            <button id="submitBenchmarkReview" class="button button-primary" type="button">Record review</button>
+            <div id="reviewOutcome" class="repair-proof" hidden></div>
+          </div>
+        </section>
+        <section id="agentResults" class="agent-results" hidden>
+          <div class="result-heading"><div><p class="kicker">Phase 4</p><h3>Live successor-agent experiment</h3></div><span id="agentResultState" class="phase-badge">Not run</span></div>
+          <p class="result-limitation">This result comes from the local Ollama model acting only through bounded in-memory tools. Deterministic verifiers—not the model—decide task success.</p>
+          <div id="agentRunSummary"></div>
+        </section>
+        <section id="repairResults" class="repair-results" hidden>
+          <div class="result-heading"><div><p class="kicker">Phase 5</p><h3>Expert-approved corpus repair</h3></div><span id="repairState" class="phase-badge">Corpus gap isolated</span></div>
+          <p class="result-limitation">Only an isolated corpus gap can enter this flow. Recording an answer does not change the corpus; a named owner must approve it separately before replay.</p>
+          <div id="repairQuestionStart">
+            <button id="createExpertQuestion" class="button button-secondary" type="button">Create expert question</button>
+          </div>
+          <div id="repairQuestionPanel" class="repair-card" hidden>
+            <p class="kicker">Question for the handover expert</p>
+            <h4 id="expertQuestionPrompt"></h4>
+            <p id="expertQuestionMeta" class="repair-meta"></p>
+            <form id="expertAnswerForm" class="repair-form">
+              <label for="expertAnswerText">Approved procedure</label>
+              <textarea id="expertAnswerText" rows="4" required placeholder="Give the exact action, parameters and safety condition..."></textarea>
+              <div class="repair-fields">
+                <label for="expertSource">Source reference<input id="expertSource" required placeholder="Runbook, ticket or owner reference"></label>
+                <label for="expertName">Answering expert<input id="expertName" required placeholder="Name or accountable role"></label>
+              </div>
+              <button id="submitExpertAnswer" class="button button-secondary" type="submit">Record answer for review</button>
+            </form>
+          </div>
+          <div id="approvalPanel" class="repair-card" hidden>
+            <p class="kicker">Independent approval</p>
+            <p id="answerReview" class="repair-answer"></p>
+            <div class="approval-row"><label for="approvedBy">Approving owner<input id="approvedBy" required placeholder="Handover owner"></label><button id="approveExpertAnswer" class="button button-primary" type="button">Approve and version corpus</button></div>
+          </div>
+          <div id="replayPanel" class="repair-card" hidden>
+            <p class="kicker">Immutable patch</p>
+            <p id="patchSummary" class="repair-answer"></p>
+            <button id="replayPatch" class="button button-primary" type="button">Replay identical task</button>
+          </div>
+          <div id="replayOutcome" class="repair-proof" hidden></div>
+        </section>
+        <section id="rehearsalResults" class="rehearsal-results" hidden>
+          <div class="result-heading"><div><p class="kicker">Four-cell result</p><h3>Deterministic rehearsal</h3></div><span id="rehearsalState" class="phase-badge">Not run</span></div>
+          <p id="rehearsalLimitation" class="result-limitation"></p>
+          <div id="rehearsalTasks"></div>
+        </section>
+      </div>
+    </section>
+
+    <aside class="handoff-guide panel">
+      <div class="panel-heading"><div><p class="kicker">Build boundary</p><h2>What this proves</h2></div></div>
+      <ol class="proof-list">
+        <li><strong>Records</strong><span>Cases, corpus versions, facts, tasks and verifiers persist locally.</span></li>
+        <li><strong>Controls</strong><span>Actual/complete corpora cross normal/oracle retrieval.</span></li>
+        <li><strong>Diagnosis</strong><span>Seeded result patterns map to the expected cause.</span></li>
+      </ol>
+      <div class="boundary-note"><strong>Current boundary</strong><p>Phase 7 removes impossible cells before model execution and adds named independent review. Until every task is approved, claims remain source-derived mechanism evidence—not GitLab production validation.</p></div>
+      <div class="terminal-note"><p class="kicker">Terminal equivalent</p><code>uv run srag handoff init-gitlab</code><code>uv run srag handoff rehearse gitlab-runbooks-handover-benchmark</code></div>
+      <div class="terminal-note"><p class="kicker">Live agent</p><code>uv run srag handoff run gitlab-runbooks-handover-benchmark --task &lt;task_id&gt;</code><code>uv run srag handoff benchmark-report gitlab-runbooks-handover-benchmark</code></div>
+      <div class="terminal-note"><p class="kicker">Independent review</p><code>uv run srag handoff review-packet gitlab-runbooks-handover-benchmark</code><code>uv run srag handoff reviews --case gitlab-runbooks-handover-benchmark</code></div>
+      <div class="terminal-note"><p class="kicker">Repair loop</p><code>uv run srag handoff ask-expert &lt;experiment_id&gt;</code><code>uv run srag handoff questions</code><code>uv run srag handoff replay &lt;patch_id&gt;</code></div>
+    </aside>
+  </main>
+
+  <dialog id="documentDialog" class="document-dialog">
+    <div class="dialog-heading">
+      <div><p class="kicker">Document inspection</p><h2 id="dialogTitle">Document</h2></div>
+      <button id="closeDialog" class="close-button" type="button" aria-label="Close">Close</button>
+    </div>
+    <div id="dialogMeta" class="dialog-meta"></div>
+    <div id="dialogChunks" class="dialog-chunks"></div>
+  </dialog>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
