@@ -1,4 +1,4 @@
-# TypeSafe evidence governor: Phase 0 integration
+# [TypeSafe](https://typesafe.ai/) evidence governor: Phase 0 integration
 
 ## Status
 

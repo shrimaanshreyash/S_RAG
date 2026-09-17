@@ -8,9 +8,11 @@ The project combines three layers:
 
 - an inspectable local RAG pipeline powered by Ollama;
 - **HandoffProof**, a four-cell causal test for operational handovers;
-- an optional **TypeSafe/Jev evidence governor** for typed passage-level judgments.
+- an optional [**TypeSafe/Jev**](https://typesafe.ai/) evidence governor for typed
+  passage-level judgments.
 
 The ordinary RAG and HandoffProof workflows do not require TypeSafe access.
+The browser exposes both workflows as separate **HandoffProof** and **RAG baseline** tabs.
 
 > **Evidence boundary:** The GitLab benchmark uses pinned public runbooks with simulated
 > incidents, tools and verifier state. It has external agent-review evidence, but it is
@@ -54,7 +56,7 @@ may enter the expert-question and versioned-repair workflow.
 - deterministic feasibility preflight and final-state verifiers
 - persistent runs, review packets, expert questions, approvals and replay evidence
 
-### Optional TypeSafe evidence governor
+### Optional [TypeSafe](https://typesafe.ai/) evidence governor
 
 When explicitly enabled, TypeSafe/Jev evaluates each retrieved query/passage pair on
 four independent dimensions:
@@ -98,12 +100,29 @@ handover corpus + task contract
 - Python 3.11
 - [uv](https://docs.astral.sh/uv/)
 - [Ollama](https://ollama.com/)
-- `qwen3:4b`
-- `qwen3-embedding:0.6b`
+- an Ollama generation model with reliable structured-JSON output
+- an Ollama embedding model
 - optional: an authorized TypeSafe early-access account and API key
 
 The project is primarily tested on Windows. The Python application is cross-platform;
 the pinned-corpus fetch helper is currently PowerShell.
+
+### Model compatibility
+
+`qwen3:4b` and `qwen3-embedding:0.6b` are the tested defaults selected for the
+original 6 GB GPU environment. They are not hardcoded requirements. Configure other
+Ollama models in `.env`:
+
+```dotenv
+S_RAG_GENERATION_MODEL=your-generation-model
+S_RAG_EMBEDDING_MODEL=your-embedding-model
+```
+
+The browser header and status API display the configured model names dynamically.
+The generation model must follow the structured JSON schemas used by RAG and
+HandoffProof; model quality and tool-selection behavior may differ. After changing
+the embedding model, delete/rebuild the local index and re-ingest documents so stored
+vectors are not mixed across embedding spaces.
 
 ## Quick start
 
@@ -229,8 +248,6 @@ Read the [review record](docs/evaluation/15-independent-agent-review.md) and the
 ## Screenshots
 
 ![HandoffProof review workflow](output/playwright/handoffproof-phase-7-review-hardening.png)
-
-![HandoffProof mobile workflow](output/playwright/handoffproof-phase-7-review-hardening-mobile.png)
 
 ## Documentation
 
